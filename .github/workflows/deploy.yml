@@ -42,8 +42,12 @@ jobs:
       run: |
         zip -r deploy.zip dist node_modules package.json package-lock.json prisma .env
       
+    - name: Check SSH key length
+      run: echo "${{ secrets.EC2_SSH_KEY }}" | wc -c
+
     - name: Configure SSH
       run: |
+        set -x
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key.pem
         chmod 600 ~/.ssh/ec2_key.pem
