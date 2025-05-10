@@ -70,3 +70,12 @@ jobs:
           pm2 start dist/server.js --name todo-app
           pm2 save
         '
+    - name: Health Check
+      run: |
+          sleep 5  # give PM2/server a few seconds to start
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:3000/health)
+          if [ "$STATUS_CODE" -ne 200 ]; then
+            echo "❌ Health check failed! Status code: $STATUS_CODE"
+            exit 1
+          fi
+          echo "✅ Health check passed! Server is healthy (HTTP $STATUS_CODE)"
