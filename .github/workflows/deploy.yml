@@ -65,7 +65,7 @@ jobs:
           rm -rf ~/todo-app/*
           unzip ~/deploy.zip -d ~/todo-app
           cd ~/todo-app
-          npx prisma migrate deploy
+          # npx prisma migrate deploy
           pm2 stop todo-app || true
           pm2 start dist/server.js --name todo-app
           pm2 save
