@@ -10,72 +10,27 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-      with:
-          version: 9
-          run_install: true
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
-        cache: pnpm
-        
-    - name: Install dependencies
-      run: pnpm install
-      
-    - name: Build
-      run: pnpm build
-      
-    - name: Generate Prisma Client
-      run: npx prisma generate
       
     - name: Create .env file
       run: |
         echo "DATABASE_URL=\"${{ secrets.DATABASE_URL }}\"" > .env
         echo "JWT_SECRET=\"${{ secrets.JWT_SECRET }}\"" >> .env
         echo "PORT=3000" >> .env
-      
-    - name: Create deployment package
-      run: |
-        zip -r deploy.zip dist node_modules package.json package-lock.json prisma .env
-      
-    - name: Check SSH key length
-      run: echo "${{ secrets.EC2_SSH_KEY }}" | wc -c
 
     - name: Configure SSH
       run: |
-        set -x
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key.pem
         chmod 600 ~/.ssh/ec2_key.pem
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Test SSH Connection
-      run: |
-        ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "echo 'SSH connected!'"
-      
     - name: Deploy to EC2
       run: |
-        scp -i ~/.ssh/ec2_key.pem deploy.zip ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/
-        ssh -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-          mkdir -p ~/todo-app
-          rm -rf ~/todo-app/*
-          unzip ~/deploy.zip -d ~/todo-app
-          cd ~/todo-app
-          # npx prisma migrate deploy
-          pm2 stop todo-app || true
-          pm2 start dist/server.js --name todo-app
-          pm2 save
-        '
-    - name: Health Check
-      run: |
-          sleep 5  # give PM2/server a few seconds to start
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}:3000/health)
-          if [ "$STATUS_CODE" -ne 200 ]; then
-            echo "❌ Health check failed! Status code: $STATUS_CODE"
-            exit 1
-          fi
-          echo "✅ Health check passed! Server is healthy (HTTP $STATUS_CODE)"
+        ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd node-ts-express-prisma || git clone git@github.com-RathodSanjayL:RathodSanjayL/node-ts-express-prisma.git && cd node-ts-express-prisma
+            git pull origin main
+            pnpm install
+            pnpm db:generate
+            pnpm build
+            pm2 restart node-ts-express-prisma || pm2 start dist/server.js --name node-ts-express-prisma
+          EOF
