@@ -22,11 +22,14 @@ jobs:
     - name: Run tests
       run: npm test || true
       
+    - name: Generate Prisma Client
+      run: npm run db:generate
+
+    - name: Migrate Prisma Client
+      run: npm run db:migrate
+
     - name: Build
       run: npm run build
-      
-    - name: Generate Prisma Client
-      run: npx prisma generate
       
     - name: Create .env file
       run: |
@@ -53,8 +56,6 @@ jobs:
           rm -rf ~/node-ts-express-prisma/*
           unzip ~/deploy.zip -d ~/node-ts-express-prisma
           cd ~/node-ts-express-prisma
-          npm run db:generate
-          npm run db:migrate
           pm2 stop node-ts-express-prisma || true
           pm2 start dist/server.js --name node-ts-express-prisma
           pm2 save
