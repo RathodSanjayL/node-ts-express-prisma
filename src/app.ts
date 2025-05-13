@@ -15,7 +15,7 @@ app.use('/api/todos', todoRoutes);
 app.use('/api/auth', authRoutes);
 
 app.get('/health', (_req, res) => {
-    res.status(200).json({ status: 'okkkk' });
+    res.status(200).json({ status: 'okay' });
 });
 
 app.use(errorHandler);

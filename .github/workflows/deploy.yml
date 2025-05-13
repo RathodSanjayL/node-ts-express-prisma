@@ -53,7 +53,7 @@ jobs:
           rm -rf ~/node-ts-express-prisma/*
           unzip ~/deploy.zip -d ~/node-ts-express-prisma
           cd ~/node-ts-express-prisma
-          pm2 stop node-ts-express-prisma-v2 || true
+          pm2 stop node-ts-express-prisma || true
           pm2 start dist/server.js --name node-ts-express-prisma
           pm2 save
         '
