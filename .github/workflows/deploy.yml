@@ -49,12 +49,11 @@ jobs:
       run: |
         scp -i ~/.ssh/ec2_key.pem deploy.zip ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/
         ssh -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-          mkdir -p ~/node-ts-express-prisma-v2
-          rm -rf ~/node-ts-express-prisma-v2/*
-          unzip ~/deploy.zip -d ~/node-ts-express-prisma-v2
-          cd ~/node-ts-express-prisma-v2
-          npm run start
-          # pm2 stop node-ts-express-prisma-v2 || true
-          # pm2 start dist/server.js --name node-ts-express-prisma
-          # pm2 save
+          mkdir -p ~/node-ts-express-prisma
+          rm -rf ~/node-ts-express-prisma/*
+          unzip ~/deploy.zip -d ~/node-ts-express-prisma
+          cd ~/node-ts-express-prisma
+          pm2 stop node-ts-express-prisma-v2 || true
+          pm2 start dist/server.js --name node-ts-express-prisma
+          pm2 save
         '
