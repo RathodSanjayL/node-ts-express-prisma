@@ -49,11 +49,29 @@ jobs:
       run: |
         scp -i ~/.ssh/ec2_key.pem deploy.zip ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/
         ssh -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} '
-          mkdir -p ~/node-ts-express-prisma
-          rm -rf ~/node-ts-express-prisma/*
-          unzip ~/deploy.zip -d ~/node-ts-express-prisma
-          cd ~/node-ts-express-prisma
-          pm2 stop node-ts-express-prisma || true
-          pm2 start dist/server.js --name node-ts-express-prisma
-          pm2 save
+        set -e
+
+        mkdir -p ~/releases
+        TIMESTAMP=$(date +%s)
+        RELEASE_DIR=~/releases/$TIMESTAMP
+
+        mkdir -p $RELEASE_DIR
+        unzip ~/deploy.zip -d $RELEASE_DIR
+
+        cd $RELEASE_DIR
+        pm2 start dist/server.js --name node-ts-express-prisma-temp
+        sleep 5
+
+        if ! curl --fail http://localhost:3001/health; then
+          echo "❌ Health check failed. Rolling back..."
+          pm2 stop node-ts-express-prisma-temp
+          pm2 delete node-ts-express-prisma-temp
+          exit 1
+        fi
+
+        pm2 stop node-ts-express-prisma || true
+        ln -sfn $RELEASE_DIR ~/node-ts-express-prisma
+        pm2 start ~/node-ts-express-prisma/dist/server.js --name node-ts-express-prisma
+        pm2 save
+        pm2 delete node-ts-express-prisma-temp
         '
